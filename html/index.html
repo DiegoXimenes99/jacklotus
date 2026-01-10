@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loteria</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        .container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .container.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .glass-card {
+            background: linear-gradient(135deg, rgba(15, 15, 15, 0.95), rgba(20, 20, 20, 0.98));
+            border-radius: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 45px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            animation: slideUp 0.4s ease-out;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .icon-container {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border-radius: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .icon {
+            font-size: 48px;
+        }
+
+        .title {
+            font-size: 36px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .prize-section {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.1));
+            border: 2px solid rgba(245, 158, 11, 0.3);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .prize-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .prize-amount {
+            font-size: 48px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 18px;
+            text-align: center;
+        }
+
+        .info-label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .info-value {
+            color: #fbbf24;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .number-input-section {
+            margin-bottom: 25px;
+        }
+
+        .input-label {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .number-input-wrapper {
+            position: relative;
+        }
+
+        .number-input {
+            width: 100%;
+            padding: 18px 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(245, 158, 11, 0.3);
+            border-radius: 16px;
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .number-input:focus {
+            outline: none;
+            border-color: #f59e0b;
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+        }
+
+        .number-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .hint-text {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .warning {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 25px;
+        }
+
+        .warning-icon {
+            font-size: 24px;
+        }
+
+        .warning-text {
+            color: #fca5a5;
+            font-size: 13px;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 18px 28px;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-icon {
+            font-size: 20px;
+        }
+
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-enter {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            box-shadow: 0 6px 25px rgba(245, 158, 11, 0.4);
+            border: 2px solid transparent;
+        }
+
+        .btn-enter:hover {
+            background: linear-gradient(135deg, #d97706, #b45309);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 35px rgba(245, 158, 11, 0.6);
+        }
+
+        .btn-enter:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 600px) {
+            .glass-card {
+                padding: 30px 20px;
+            }
+            
+            .title {
+                font-size: 28px;
+            }
+
+            .prize-amount {
+                font-size: 36px;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="lotteryUI">
+        <div class="glass-card">
+            <div class="header">
+                <div class="icon-container">
+                    <div class="icon">🎰</div>
+                </div>
+                <h1 class="title">LOTERIA</h1>
+                <p class="subtitle">Escolha seu número da sorte</p>
+            </div>
+            
+            <div class="prize-section">
+                <div class="prize-label">Prêmio Acumulado</div>
+                <div class="prize-amount" id="prizeAmount">R$ 0</div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-label">Faixa de Números</div>
+                    <div class="info-value" id="numberRange">1 - 100</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-label">Valor da Entrada</div>
+                    <div class="info-value" id="entryPrice">R$ 0</div>
+                </div>
+            </div>
+
+            <div class="number-input-section">
+                <label class="input-label">Digite seu número da sorte:</label>
+                <div class="number-input-wrapper">
+                    <input 
+                        type="number" 
+                        class="number-input" 
+                        id="numberInput" 
+                        placeholder="00"
+                        min="1"
+                        max="100"
+                    >
+                </div>
+                <div class="hint-text" id="hintText">Escolha um número entre 1 e 100</div>
+            </div>
+
+            <div class="warning">
+                <div class="warning-icon">⚠️</div>
+                <div class="warning-text">
+                    Se ninguém acertar o número, o prêmio acumula para o próximo sorteio!
+                </div>
+            </div>
+            
+            <div class="buttons">
+                <button class="btn btn-cancel" id="cancelBtn">
+                    <span class="btn-icon">✕</span>
+                    Cancelar
+                </button>
+                <button class="btn btn-enter" id="enterBtn">
+                    <span class="btn-icon">🎲</span>
+                    Entrar na Loteria
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const ui = document.getElementById('lotteryUI');
+        const numberInput = document.getElementById('numberInput');
+        const enterBtn = document.getElementById('enterBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const prizeAmount = document.getElementById('prizeAmount');
+        const numberRange = document.getElementById('numberRange');
+        const entryPrice = document.getElementById('entryPrice');
+        const hintText = document.getElementById('hintText');
+
+        let lotteryData = {
+            prize: 0,
+            minNumber: 1,
+            maxNumber: 100,
+            entryPrice: 0
+        };
+
+        function formatMoney(value) {
+            return 'R$ ' + value.toLocaleString('pt-BR');
+        }
+
+        function updateUI() {
+            prizeAmount.textContent = formatMoney(lotteryData.prize);
+            numberRange.textContent = `${lotteryData.minNumber} - ${lotteryData.maxNumber}`;
+            entryPrice.textContent = formatMoney(lotteryData.entryPrice);
+            hintText.textContent = `Escolha um número entre ${lotteryData.minNumber} e ${lotteryData.maxNumber}`;
+            numberInput.min = lotteryData.minNumber;
+            numberInput.max = lotteryData.maxNumber;
+        }
+
+        window.addEventListener('message', function(event) {
+            const data = event.data;
+            
+            if (data.action === 'open') {
+                ui.classList.add('active');
+                numberInput.value = '';
+                numberInput.focus();
+            } else if (data.action === 'close') {
+                ui.classList.remove('active');
+            } else if (data.action === 'updateInfo') {
+                lotteryData = data.data;
+                updateUI();
+            } else if (data.action === 'updatePrize') {
+                lotteryData.prize = data.prize;
+                prizeAmount.textContent = formatMoney(data.prize);
+            }
+        });
+
+        cancelBtn.addEventListener('click', function() {
+            fetch(`https://${GetParentResourceName()}/close`, {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+        });
+
+        enterBtn.addEventListener('click', function() {
+            const number = parseInt(numberInput.value);
+            
+            if (!number || number < lotteryData.minNumber || number > lotteryData.maxNumber) {
+                numberInput.style.borderColor = '#ef4444';
+                setTimeout(() => {
+                    numberInput.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                }, 1000);
+                return;
+            }
+            
+            fetch(`https://${GetParentResourceName()}/enterLottery`, {
+                method: 'POST',
+                body: JSON.stringify({ number: number })
+            });
+        });
+
+        numberInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                enterBtn.click();
+            }
+        });
+
+        document.addEventListener('keyup', function(e) {
+            if (e.key === 'Escape' && ui.classList.contains('active')) {
+                cancelBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>
