@@ -8,7 +8,8 @@ version '1.0.0'
 -- Dependências
 dependencies {
     'qbx_core',
-    'ox_target'
+    'ox_target',
+    'oxmysql'
 }
 
 -- Shared

@@ -1,189 +1,188 @@
 -- QBox usa exports diretos, não GetCoreObject
-
--- Variáveis da loteria
 local currentPrize = Config.ServerPoolAmount
 local participants = {}
-local drawTimer = Config.DrawTime * 60 * 1000
 local isDrawing = false
 
-Config.DebugPrint("Servidor iniciado - Prêmio inicial: R$" .. currentPrize)
-
--- Função para notificar
-local function Notify(source, message, type)
-    -- Usar notificação simples do QBCore/QBox
-    TriggerClientEvent('QBCore:Notify', source, message, type or 'primary')
-    Config.DebugPrint("Notificação enviada para jogador " .. source .. ": " .. message)
+-- Inicialização do MySQL
+local function InitDatabase()
+    if not Config.UseMySQL then return end
+    
+    -- Carregar configurações e prêmio do banco
+    MySQL.single('SELECT * FROM lottery_settings WHERE id = 1', {}, function(result)
+        if result then
+            Config.MinNumber = result.min_number
+            Config.MaxNumber = result.max_number
+            Config.EntryPrice = result.entry_price
+            Config.DrawTime = result.draw_time
+            currentPrize = result.current_prize
+            Config.DebugPrint("Configurações carregadas do Banco de Dados.")
+            Config.DebugPrint("Prêmio Atual: R$" .. currentPrize)
+        else
+            -- Criar entrada padrão se não existir
+            MySQL.insert('INSERT INTO lottery_settings (id, min_number, max_number, entry_price, draw_time, current_prize) VALUES (?, ?, ?, ?, ?, ?)',
+                {1, Config.MinNumber, Config.MaxNumber, Config.EntryPrice, Config.DrawTime, Config.ServerPoolAmount})
+            Config.DebugPrint("Configurações padrão inseridas no Banco de Dados.")
+        end
+    end)
 end
 
--- Função para notificar todos
+-- Salvar prêmio atual no banco
+local function SavePrize()
+    if not Config.UseMySQL then return end
+    MySQL.update('UPDATE lottery_settings SET current_prize = ? WHERE id = 1', {currentPrize}, function(affectedRows)
+        if affectedRows > 0 then
+            Config.DebugPrint("Prêmio salvo no Banco de Dados: R$" .. currentPrize)
+        end
+    end)
+end
+
+-- Notificação simples do QBox
+local function Notify(source, message, type)
+    TriggerClientEvent('QBCore:Notify', source, message, type or 'primary')
+end
+
+-- Notificação global via Chat
 local function NotifyAll(message)
     TriggerClientEvent('chat:addMessage', -1, {
-        template = '<div style="padding: 0.5vw; margin: 0.5vw; background-color: rgba(245, 158, 11, 0.8); border-radius: 5px;"><b>🎰 LOTERIA:</b> {0}</div>',
+        template = '<div style="padding: 0.5vw; margin: 0.5vw; background-color: rgba(245, 158, 11, 0.8); border-radius: 5px; color: white; font-family: sans-serif;"><b>🎰 LOTERIA:</b> {0}</div>',
         args = { message }
     })
-    Config.DebugPrint("Notificação global: " .. message)
 end
 
--- Função para remover dinheiro
+-- Função para remover dinheiro (Cash ou Bank)
 local function RemoveMoney(source, amount)
     local Player = exports.qbx_core:GetPlayer(source)
-    if not Player then
-        Config.DebugPrint("ERRO: Jogador não encontrado (ID: " .. source .. ")")
-        return false
-    end
+    if not Player then return false end
     
-    -- Tenta remover do dinheiro em mãos primeiro
     if Player.Functions.GetMoney('cash') >= amount then
         Player.Functions.RemoveMoney('cash', amount)
-        Config.DebugPrint("Removido R$" .. amount .. " (cash) do jogador " .. source)
         return true
-    -- Senão tenta do banco
     elseif Player.Functions.GetMoney('bank') >= amount then
         Player.Functions.RemoveMoney('bank', amount)
-        Config.DebugPrint("Removido R$" .. amount .. " (bank) do jogador " .. source)
         return true
     end
-    
-    Config.DebugPrint("ERRO: Jogador " .. source .. " não tem dinheiro suficiente")
     return false
 end
 
--- Função para adicionar dinheiro
-local function AddMoney(source, amount)
-    local Player = exports.qbx_core:GetPlayer(source)
-    if not Player then
-        Config.DebugPrint("ERRO: Jogador não encontrado para adicionar dinheiro (ID: " .. source .. ")")
-        return
-    end
-    
-    Player.Functions.AddMoney('cash', amount)
-    Config.DebugPrint("Adicionado R$" .. amount .. " ao jogador " .. source)
-end
-
--- Pegar nome do jogador
+-- Pegar nome do personagem
 local function GetPlayerName(source)
     local Player = exports.qbx_core:GetPlayer(source)
-    if not Player then
-        Config.DebugPrint("ERRO: Jogador não encontrado para pegar nome (ID: " .. source .. ")")
-        return "Desconhecido"
-    end
-    
-    local name = Player.PlayerData.charinfo.firstname .. " " .. Player.PlayerData.charinfo.lastname
-    Config.DebugPrint("Nome do jogador " .. source .. ": " .. name)
-    return name
+    if not Player then return "Desconhecido" end
+    return Player.PlayerData.charinfo.firstname .. " " .. Player.PlayerData.charinfo.lastname
 end
 
--- Realizar sorteio
+-- Obter Identificador (CitizenID)
+local function GetPlayerIdentifier(source)
+    local Player = exports.qbx_core:GetPlayer(source)
+    if not Player then return nil end
+    return Player.PlayerData.citizenid
+end
+
+-- Realizar o Sorteio
 local function PerformDraw()
-    if isDrawing then 
-        Config.DebugPrint("Sorteio já está em andamento, ignorando...")
-        return 
-    end
-    
+    if isDrawing then return end
     isDrawing = true
+    
     Config.DebugPrint("=== INICIANDO SORTEIO ===")
-    Config.DebugPrint("Participantes: " .. json.encode(participants))
     
     local winningNumber = math.random(Config.MinNumber, Config.MaxNumber)
-    Config.DebugPrint("Número sorteado: " .. winningNumber)
+    local winners = {} -- Lista de IDs dos vencedores
     
-    local winner = nil
-    
-    -- Procurar vencedor
-    for source, number in pairs(participants) do
-        Config.DebugPrint("Verificando jogador " .. source .. " com número " .. number)
-        if number == winningNumber then
-            winner = source
-            Config.DebugPrint("VENCEDOR ENCONTRADO! Jogador: " .. source)
-            break
+    -- Identificar todos os vencedores (Suporte a múltiplos vencedores)
+    for src, num in pairs(participants) do
+        if num == winningNumber then
+            table.insert(winners, src)
         end
     end
     
-    if winner then
-        -- Tem vencedor
-        local winnerName = GetPlayerName(winner)
-        AddMoney(winner, currentPrize)
+    if #winners > 0 then
+        -- Dividir prêmio se houver mais de um vencedor
+        local prizePerWinner = math.floor(currentPrize / #winners)
+        local winnersNames = {}
         
-        Notify(winner, string.format(Config.Notifications.winner, currentPrize), 'success')
-        NotifyAll(string.format("🎉 %s ganhou R$%s acertando o número %s!", winnerName, currentPrize, winningNumber))
+        for _, src in ipairs(winners) do
+            local Player = exports.qbx_core:GetPlayer(src)
+            if Player then
+                Player.Functions.AddMoney('bank', prizePerWinner)
+                local name = GetPlayerName(src)
+                table.insert(winnersNames, name)
+                
+                Notify(src, string.format(Config.Notifications.winner, prizePerWinner), 'success')
+                
+                -- Logar histórico de cada vencedor
+                if Config.UseMySQL then
+                    MySQL.insert('INSERT INTO lottery_history (winning_number, winner_identifier, winner_name, prize_amount, has_winner) VALUES (?, ?, ?, ?, ?)',
+                        {winningNumber, GetPlayerIdentifier(src), name, prizePerWinner, 1})
+                end
+            end
+        end
         
-        Config.DebugPrint("Prêmio de R$" .. currentPrize .. " entregue ao vencedor")
+        local announcement = string.format("🎉 %s acertaram o número %s e dividiram R$%s!", table.concat(winnersNames, ", "), winningNumber, currentPrize)
+        NotifyAll(announcement)
         
-        -- Resetar prêmio
+        -- Resetar prêmio para o valor inicial do servidor
         currentPrize = Config.ServerPoolAmount
     else
         -- Ninguém ganhou - acumula
-        Config.DebugPrint("Nenhum vencedor! Prêmio acumula para: R$" .. currentPrize)
         NotifyAll(string.format(Config.Notifications.noWinner, winningNumber, currentPrize))
+        
+        -- Logar sorteio sem vencedor
+        if Config.UseMySQL then
+            MySQL.insert('INSERT INTO lottery_history (winning_number, prize_amount, has_winner) VALUES (?, ?, ?)',
+                {winningNumber, currentPrize, 0})
+        end
     end
     
-    -- Limpar participantes
+    -- Limpar participantes para a próxima rodada
     participants = {}
     isDrawing = false
+    SavePrize() -- Salvar estado após o sorteio
     
-    Config.DebugPrint("=== SORTEIO FINALIZADO ===")
-    Config.DebugPrint("Novo prêmio: R$" .. currentPrize)
-    
-    -- Atualizar todos os clientes
     TriggerClientEvent('lottery:updatePrize', -1, currentPrize)
-    
-    -- Agendar próximo sorteio
-    Config.DebugPrint("Próximo sorteio em " .. Config.DrawTime .. " minutos")
-    SetTimeout(drawTimer, PerformDraw)
+    SetTimeout(Config.DrawTime * 60 * 1000, PerformDraw)
 end
 
--- Iniciar timer do sorteio
-SetTimeout(drawTimer, PerformDraw)
-Config.DebugPrint("Timer de sorteio iniciado: " .. Config.DrawTime .. " minutos")
-
--- Entrar na loteria
+-- Eventos de Rede
 RegisterNetEvent('lottery:enter', function(chosenNumber)
-    local source = source
-    Config.DebugPrint("Jogador " .. source .. " tentando entrar com número: " .. tostring(chosenNumber))
+    local src = source
     
-    -- Validar número
+    -- Proteção contra exploits: verificar se é número inteiro e válido
+    if type(chosenNumber) ~= "number" or chosenNumber % 1 ~= 0 then
+        Notify(src, "Número inválido detectado!", 'error')
+        return
+    end
+
     if chosenNumber < Config.MinNumber or chosenNumber > Config.MaxNumber then
-        Config.DebugPrint("ERRO: Número inválido - " .. tostring(chosenNumber))
-        Notify(source, string.format(Config.Notifications.numberInvalid, Config.MinNumber, Config.MaxNumber), 'error')
+        Notify(src, string.format(Config.Notifications.numberInvalid, Config.MinNumber, Config.MaxNumber), 'error')
         return
     end
     
-    -- Verificar se já está participando
-    if participants[source] then
-        Config.DebugPrint("ERRO: Jogador " .. source .. " já está participando")
-        Notify(source, Config.Notifications.alreadyEntered, 'error')
+    if participants[src] then
+        Notify(src, Config.Notifications.alreadyEntered, 'error')
         return
     end
     
-    -- Remover dinheiro
-    if not RemoveMoney(source, Config.EntryPrice) then
-        Notify(source, Config.Notifications.noMoney, 'error')
+    -- Tentar cobrar entrada
+    if not RemoveMoney(src, Config.EntryPrice) then
+        Notify(src, Config.Notifications.noMoney, 'error')
         return
     end
     
-    -- Adicionar ao prêmio
+    -- Sucesso na entrada
     currentPrize = currentPrize + Config.EntryPrice
-    Config.DebugPrint("Prêmio atualizado: R$" .. currentPrize)
+    participants[src] = chosenNumber
     
-    -- Registrar participante
-    participants[source] = chosenNumber
-    Config.DebugPrint("Participante registrado: " .. source .. " = número " .. chosenNumber)
-    
-    -- Notificar
-    local playerName = GetPlayerName(source)
-    Notify(source, string.format(Config.Notifications.entrySuccess, chosenNumber), 'success')
+    local playerName = GetPlayerName(src)
+    Notify(src, string.format(Config.Notifications.entrySuccess, chosenNumber), 'success')
     NotifyAll(string.format("💰 %s entrou na loteria! Prêmio atual: R$%s", playerName, currentPrize))
     
-    -- Atualizar todos os clientes
     TriggerClientEvent('lottery:updatePrize', -1, currentPrize)
+    SavePrize()
 end)
 
--- Enviar informações para o cliente
 RegisterNetEvent('lottery:requestInfo', function()
-    local source = source
-    Config.DebugPrint("Jogador " .. source .. " solicitou informações")
-    
-    TriggerClientEvent('lottery:receiveInfo', source, {
+    local src = source
+    TriggerClientEvent('lottery:receiveInfo', src, {
         prize = currentPrize,
         minNumber = Config.MinNumber,
         maxNumber = Config.MaxNumber,
@@ -191,16 +190,27 @@ RegisterNetEvent('lottery:requestInfo', function()
     })
 end)
 
--- Remover participante ao desconectar
-AddEventHandler('playerDropped', function(reason)
-    local source = source
-    if participants[source] then
-        Config.DebugPrint("Jogador " .. source .. " desconectou e foi removido dos participantes")
-        participants[source] = nil
+-- Limpeza ao desconectar
+AddEventHandler('playerDropped', function()
+    local src = source
+    if participants[src] then
+        participants[src] = nil
     end
 end)
 
-Config.DebugPrint("=== SISTEMA DE LOTERIA CARREGADO ===")
-Config.DebugPrint("Prêmio inicial: R$" .. currentPrize)
-Config.DebugPrint("Intervalo de números: " .. Config.MinNumber .. " - " .. Config.MaxNumber)
-Config.DebugPrint("Preço de entrada: R$" .. Config.EntryPrice)
+-- Inicialização do recurso
+MySQL.ready(function()
+    InitDatabase()
+    -- Iniciar primeiro ciclo de sorteio
+    SetTimeout(Config.DrawTime * 60 * 1000, PerformDraw)
+end)
+
+-- Loop de Auto-Save (Opcional, já salvamos em eventos críticos)
+CreateThread(function()
+    while true do
+        Wait(Config.AutoSaveInterval * 1000)
+        SavePrize()
+    end
+end)
+
+Config.DebugPrint("=== SISTEMA DE LOTERIA CARREGADO COM MYSQL ===")

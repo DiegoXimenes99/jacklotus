@@ -3,20 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loteria</title>
+    <title>Loteria - JackLotus</title>
+    <!-- Google Fonts: Inter and JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
+        :root {
+            /* Surface Colors - Based on ZN Design System but optimized for Lottery */
+            --surface-page: #05070d;
+            --surface-card: #0a0e1a;
+            --surface-elevated: #0f1424;
+            --surface-hover: #141929;
+            --surface-hud: rgba(5, 7, 13, 0.95);
+            
+            /* Text Colors */
+            --text-primary: #ffffff;
+            --text-secondary: #d1d5db;
+            --text-muted: #6b7280;
+            
+            /* Primary Accent - Orange (User Request) */
+            --accent-primary: #f59e0b;
+            --accent-hover: #d97706;
+            --accent-light: #fbbf24;
+            --accent-subtle: rgba(245, 158, 11, 0.12);
+            
+            /* Status */
+            --status-error: #ef4444;
+            --status-warning: #f59e0b;
+            
+            /* Borders & Radius */
+            --border-default: rgba(255, 255, 255, 0.07);
+            --border-subtle: rgba(255, 255, 255, 0.04);
+            --border-accent: rgba(245, 158, 11, 0.4);
+            
+            --radius-card: 16px;
+            --radius-button: 10px;
+            --radius-input: 10px;
+            --radius-badge: 6px;
+            
+            /* Typography */
+            --font-interface: 'Inter', sans-serif;
+            --font-data: 'JetBrains Mono', monospace;
+            
+            /* Transitions */
+            --transition-base: 250ms ease;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            user-select: none;
         }
 
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
         body {
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
+            font-family: var(--font-interface);
             background: transparent;
+            overflow: hidden;
+            color: var(--text-primary);
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .container {
@@ -24,361 +75,361 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.5);
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(2px);
             justify-content: center;
             align-items: center;
             z-index: 9999;
-            animation: fadeIn 0.3s ease-in-out;
+            opacity: 0;
+            transition: opacity var(--transition-base);
         }
 
         .container.active {
             display: flex;
+            opacity: 1;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        /* Card Structure */
+        .lottery-card {
+            background: var(--surface-card);
+            width: 480px;
+            border-radius: var(--radius-card);
+            border: 1px solid var(--border-default);
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8);
+            position: relative;
+            overflow: hidden;
+            transform: translateY(20px);
+            transition: transform var(--transition-base);
         }
 
-        @keyframes slideUp {
-            from {
-                transform: translateY(50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
+        .container.active .lottery-card {
+            transform: translateY(0);
         }
 
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+        /* Visual Richness - Pattern Overlay */
+        .lottery-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.03) 1px, transparent 0);
+            background-size: 24px 24px;
+            pointer-events: none;
         }
 
-        .glass-card {
-            background: linear-gradient(135deg, rgba(15, 15, 15, 0.95), rgba(20, 20, 20, 0.98));
-            border-radius: 28px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 45px;
-            max-width: 600px;
-            width: 90%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-            animation: slideUp 0.4s ease-out;
-        }
-
+        /* Header Section */
         .header {
-            text-align: center;
-            margin-bottom: 35px;
-        }
-
-        .icon-container {
-            display: inline-flex;
+            padding: 30px 40px;
+            position: relative;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
             align-items: center;
+            gap: 20px;
+        }
+
+        .icon-box {
+            width: 56px;
+            height: 56px;
+            background: var(--accent-subtle);
+            border-radius: 12px;
+            display: flex;
             justify-content: center;
-            width: 90px;
-            height: 90px;
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            border-radius: 24px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.5);
-            animation: pulse 2s infinite;
+            align-items: center;
+            color: var(--accent-primary);
+            font-size: 24px;
+            border: 1px solid var(--border-accent);
         }
 
-        .icon {
-            font-size: 48px;
-        }
-
-        .title {
-            font-size: 36px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
-            letter-spacing: -1px;
-        }
-
-        .subtitle {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 15px;
-            font-weight: 500;
-        }
-
-        .prize-section {
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.1));
-            border: 2px solid rgba(245, 158, 11, 0.3);
-            border-radius: 20px;
-            padding: 25px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .prize-label {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-        }
-
-        .prize-amount {
-            font-size: 48px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            line-height: 1;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .info-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 18px;
-            text-align: center;
-        }
-
-        .info-label {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 13px;
-            font-weight: 500;
-            margin-bottom: 8px;
-        }
-
-        .info-value {
-            color: #fbbf24;
+        .header-text h1 {
             font-size: 20px;
-            font-weight: 700;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-primary);
         }
 
-        .number-input-section {
-            margin-bottom: 25px;
+        .header-text p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 2px;
         }
 
-        .input-label {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 15px;
+        /* Prize Section */
+        .prize-hero {
+            padding: 30px 40px;
+            text-align: center;
+            background: linear-gradient(180deg, rgba(245, 158, 11, 0.05) 0%, transparent 100%);
+        }
+
+        .label-muted {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
             font-weight: 600;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             display: block;
         }
 
-        .number-input-wrapper {
-            position: relative;
+        .prize-value {
+            font-family: var(--font-data);
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--accent-primary);
+            text-shadow: 0 0 30px rgba(245, 158, 11, 0.2);
         }
 
-        .number-input {
-            width: 100%;
-            padding: 18px 20px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 2px solid rgba(245, 158, 11, 0.3);
-            border-radius: 16px;
-            color: white;
-            font-size: 24px;
+        /* Info Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: var(--border-subtle);
+            border-top: 1px solid var(--border-subtle);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .info-item {
+            padding: 20px 40px;
+            background: var(--surface-card);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .info-value {
+            font-family: var(--font-data);
+            font-size: 18px;
             font-weight: 700;
-            text-align: center;
-            font-family: 'Inter', sans-serif;
-            transition: all 0.3s ease;
+            color: var(--text-primary);
         }
 
-        .number-input:focus {
-            outline: none;
-            border-color: #f59e0b;
-            background: rgba(255, 255, 255, 0.12);
-            box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+        /* Input Section */
+        .input-section {
+            padding: 30px 40px;
         }
 
-        .number-input::placeholder {
-            color: rgba(255, 255, 255, 0.3);
-        }
-
-        .hint-text {
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 13px;
-            text-align: center;
+        .input-wrapper {
+            position: relative;
             margin-top: 10px;
         }
 
-        .warning {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: rgba(239, 68, 68, 0.12);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 14px;
-            padding: 16px;
-            margin-bottom: 25px;
-        }
-
-        .warning-icon {
+        .lottery-input {
+            width: 100%;
+            background: var(--surface-elevated);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-input);
+            padding: 16px 20px;
+            font-family: var(--font-data);
             font-size: 24px;
+            color: var(--text-primary);
+            text-align: center;
+            transition: all var(--transition-base);
         }
 
-        .warning-text {
-            color: #fca5a5;
-            font-size: 13px;
-            line-height: 1.5;
-            font-weight: 500;
+        .lottery-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: var(--surface-hover);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
         }
 
-        .buttons {
+        .lottery-input::placeholder {
+            color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Chrome, Safari, Edge, Opera - Remove arrows */
+        .lottery-input::-webkit-outer-spin-button,
+        .lottery-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Firefox - Remove arrows */
+        .lottery-input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 12px;
+        }
+
+        /* Warning Banner */
+        .warning-banner {
+            margin: 0 40px 30px;
+            padding: 14px 18px;
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            border-radius: 10px;
             display: flex;
-            gap: 15px;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .warning-banner i {
+            color: var(--status-error);
+            font-size: 16px;
+        }
+
+        .warning-banner p {
+            font-size: 12px;
+            color: #fca5a5;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        /* Footer / Actions */
+        .footer {
+            padding: 0 40px 40px;
+            display: flex;
+            gap: 12px;
         }
 
         .btn {
             flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 18px 28px;
+            padding: 14px;
+            border-radius: var(--radius-button);
             border: none;
-            border-radius: 16px;
-            font-size: 16px;
+            font-family: var(--font-interface);
+            font-size: 14px;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'Inter', sans-serif;
-        }
-
-        .btn-icon {
-            font-size: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            transition: all var(--transition-base);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .btn-cancel {
-            background: rgba(255, 255, 255, 0.08);
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            color: white;
+            background: var(--surface-elevated);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-default);
         }
 
         .btn-cancel:hover {
-            background: rgba(255, 255, 255, 0.12);
+            background: var(--surface-hover);
+            color: var(--text-primary);
+            border-color: var(--text-muted);
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: #000; /* High contrast black on orange */
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-light);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
         }
 
-        .btn-enter {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: white;
-            box-shadow: 0 6px 25px rgba(245, 158, 11, 0.4);
-            border: 2px solid transparent;
-        }
-
-        .btn-enter:hover {
-            background: linear-gradient(135deg, #d97706, #b45309);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 35px rgba(245, 158, 11, 0.6);
-        }
-
-        .btn-enter:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn:active:not(:disabled) {
+        .btn-primary:active {
             transform: translateY(0);
         }
 
-        @media (max-width: 600px) {
-            .glass-card {
-                padding: 30px 20px;
-            }
-            
-            .title {
-                font-size: 28px;
-            }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
 
-            .prize-amount {
-                font-size: 36px;
-            }
-            
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .buttons {
-                flex-direction: column;
-            }
+        /* Animations */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            box-shadow: 0 0 10px var(--accent-primary);
+            animation: pulse 2s infinite;
         }
     </style>
 </head>
 <body>
     <div class="container" id="lotteryUI">
-        <div class="glass-card">
+        <div class="lottery-card">
+            <!-- Header -->
             <div class="header">
-                <div class="icon-container">
-                    <div class="icon">🎰</div>
+                <div class="icon-box">
+                    <i class="fa-solid fa-ticket"></i>
                 </div>
-                <h1 class="title">LOTERIA</h1>
-                <p class="subtitle">Escolha seu número da sorte</p>
-            </div>
-            
-            <div class="prize-section">
-                <div class="prize-label">Prêmio Acumulado</div>
-                <div class="prize-amount" id="prizeAmount">R$ 0</div>
+                <div class="header-text">
+                    <h1>Sorteio de Loteria</h1>
+                    <p>Tente a sorte e ganhe a bolada!</p>
+                </div>
             </div>
 
+            <!-- Prize Area -->
+            <div class="prize-hero">
+                <span class="label-muted">Prêmio Acumulado</span>
+                <div class="prize-value" id="prizeAmount">R$ 0</div>
+            </div>
+
+            <!-- Info Grid -->
             <div class="info-grid">
-                <div class="info-card">
-                    <div class="info-label">Faixa de Números</div>
+                <div class="info-item">
+                    <span class="label-muted">Faixa de Números</span>
                     <div class="info-value" id="numberRange">1 - 100</div>
                 </div>
-                <div class="info-card">
-                    <div class="info-label">Valor da Entrada</div>
+                <div class="info-item">
+                    <span class="label-muted">Custo da Entrada</span>
                     <div class="info-value" id="entryPrice">R$ 0</div>
                 </div>
             </div>
 
-            <div class="number-input-section">
-                <label class="input-label">Digite seu número da sorte:</label>
-                <div class="number-input-wrapper">
+            <!-- Input Area -->
+            <div class="input-section">
+                <span class="label-muted">Escolha seu número</span>
+                <div class="input-wrapper">
                     <input 
                         type="number" 
-                        class="number-input" 
+                        class="lottery-input" 
                         id="numberInput" 
-                        placeholder="00"
+                        placeholder="--"
                         min="1"
                         max="100"
                     >
                 </div>
-                <div class="hint-text" id="hintText">Escolha um número entre 1 e 100</div>
+                <p class="hint" id="hintText">Escolha um número entre 1 e 100</p>
             </div>
 
-            <div class="warning">
-                <div class="warning-icon">⚠️</div>
-                <div class="warning-text">
-                    Se ninguém acertar o número, o prêmio acumula para o próximo sorteio!
-                </div>
+            <!-- Warning -->
+            <div class="warning-banner">
+                <i class="fa-solid fa-circle-info"></i>
+                <p>Se não houver ganhador, o valor acumula para o próximo sorteio automaticamente.</p>
             </div>
-            
-            <div class="buttons">
+
+            <!-- Actions -->
+            <div class="footer">
                 <button class="btn btn-cancel" id="cancelBtn">
-                    <span class="btn-icon">✕</span>
-                    Cancelar
+                    <i class="fa-solid fa-xmark"></i> Fechar
                 </button>
-                <button class="btn btn-enter" id="enterBtn">
-                    <span class="btn-icon">🎲</span>
-                    Entrar na Loteria
+                <button class="btn btn-primary" id="enterBtn">
+                    <i class="fa-solid fa-dice"></i> Apostar
                 </button>
             </div>
         </div>
     </div>
-    
+
     <script>
         const ui = document.getElementById('lotteryUI');
         const numberInput = document.getElementById('numberInput');
@@ -415,7 +466,8 @@
             if (data.action === 'open') {
                 ui.classList.add('active');
                 numberInput.value = '';
-                numberInput.focus();
+                // Delay focus slightly for animation
+                setTimeout(() => numberInput.focus(), 300);
             } else if (data.action === 'close') {
                 ui.classList.remove('active');
             } else if (data.action === 'updateInfo') {
@@ -438,9 +490,12 @@
             const number = parseInt(numberInput.value);
             
             if (!number || number < lotteryData.minNumber || number > lotteryData.maxNumber) {
-                numberInput.style.borderColor = '#ef4444';
+                // Visual error feedback
+                numberInput.style.borderColor = 'var(--status-error)';
+                numberInput.style.color = 'var(--status-error)';
                 setTimeout(() => {
-                    numberInput.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                    numberInput.style.borderColor = 'var(--border-default)';
+                    numberInput.style.color = 'var(--text-primary)';
                 }, 1000);
                 return;
             }

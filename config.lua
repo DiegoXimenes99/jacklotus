@@ -23,13 +23,13 @@ Config.UsePed = true -- Ativar/desativar o NPC
 
 Config.Ped = {
     model = "a_m_m_business_01", -- Modelo do NPC
-    coords = vector4(1112.86, 232.49, 80.99, 0.0), -- Posição e rotação do NPC
+    coords = vector4(928.5, 52.82, 81.1, 58.68), -- Posição e rotação do NPC
     scenario = "WORLD_HUMAN_CLIPBOARD" -- Animação do NPC (opcional)
 }
 
 -- Localização do blip no mapa e interação
 Config.LotteryLocation = {
-    coords = vector3(1112.86, 232.49, 80.99), -- Cassino (ajuste conforme necessário)
+    coords = vector4(928.5, 52.82, 81.1, 57.68), -- Cassino (ajuste conforme necessário)
     heading = 0.0
 }
 
